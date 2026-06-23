@@ -1,0 +1,13 @@
+graph TD
+    RootLayout[Root Layout: query-client, auth-provider, theme-provider] --> AuthGroup["(auth) Group Layout"]
+    RootLayout --> DashGroup["(dashboard) Group Layout"]
+    
+    AuthGroup --> Login[Login Page]
+    AuthGroup --> Register[Register Page]
+    
+    DashGroup --> SidebarPanel[Sidebar Panel Component]
+    DashGroup --> HeaderPanel[Header Panel Component]
+    DashGroup --> CmdK[Command Palette Component]
+    DashGroup --> SubLayout[Nested Workspace / Project Layouts]
+    
+    SubLayout --> ProjectFeed[Project Workspace Pages]

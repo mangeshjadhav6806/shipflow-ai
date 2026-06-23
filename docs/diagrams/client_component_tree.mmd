@@ -1,0 +1,10 @@
+graph TD
+    WorkspaceLayout[Code Editor Workspace] --> FolderTree[`<FileTreeViewer>` Component]
+    WorkspaceLayout --> EditorPanel[`<CodeSandbox>` Component]
+    WorkspaceLayout --> TerminalLog[`<RealtimeTerminal>` Component]
+    
+    FolderTree --> FileNode[File/Directory Leaf Nodes]
+    EditorPanel --> TabHeader[Dynamic File Tabs]
+    EditorPanel --> CodeMirrorContainer[Diff Viewer / Code Editor Grid]
+    CodeMirrorContainer --> DiffGutter[Inline Comment Add Triggers]
+    CodeMirrorContainer --> CommentForm[Threaded Review Comment Composer]

@@ -1,0 +1,9 @@
+graph TD
+    SystemPrompt[System Prompt] --> Builder[Prompt Builder]
+    MemoryContext[Memory Context] --> Builder
+    RepoContext[Repo AST Context] --> Builder
+    UserReq[User Request] --> Builder
+    ToolOut[Tool Outputs] --> Builder
+    ZodSchema[Zod Validation Schema] --> Builder
+    
+    Builder -->|Aggregate Context| LLM[LLM API Engine]

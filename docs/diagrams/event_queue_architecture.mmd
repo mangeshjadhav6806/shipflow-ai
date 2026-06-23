@@ -1,0 +1,16 @@
+graph TD
+    Inngest[Inngest Orchestrator] --> Router{Event Router}
+    
+    Router -->|feature.*| FeatureQueue[Feature Queue]
+    Router -->|github.pr.*| ReviewQueue[Review Queue]
+    Router -->|qa.*| QAQueue[QA Queue]
+    Router -->|release.*| DeployQueue[Deployment Queue]
+    Router -->|notify.*| NotifyQueue[Notification Queue]
+    Router -->|billing.*| BillingQueue[Billing Queue]
+    
+    FeatureQueue -->|Worker Pool A| ClarifyWorker[Clarify & PRD Workers]
+    ReviewQueue -->|Worker Pool B| ReviewWorker[Review & Patch Workers]
+    QAQueue -->|Worker Pool C| QAWorker[Sandbox Test Workers]
+    DeployQueue -->|Worker Pool D| DeployWorker[Vercel Deploy Workers]
+    NotifyQueue -->|Worker Pool E| NotifyWorker[Slack/Email Workers]
+    BillingQueue -->|Worker Pool F| BillingWorker[Razorpay Workers]

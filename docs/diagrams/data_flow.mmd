@@ -1,0 +1,14 @@
+graph TD
+    A["Feature Requested"] --> B["Ambiguity Check (Clarification Agent)"]
+    B -->|Has Questions| C["User Answer Dialog"]
+    C --> B
+    B -->|Clear| D["Markdown PRD Created"]
+    D --> E["Task Breakdown Generated"]
+    E --> F["Repository Analyzed"]
+    F --> G["Code Pushed / PR Opened"]
+    G --> H["AI Code Review"]
+    H -->|Has Issues| I["AI Auto-Patching Code"]
+    I --> H
+    H -->|Passes| J["QA Automated Tests Run"]
+    J --> K["Lead Approval & PR Merge"]
+    K --> L["Release Notes Created & Deployed"]

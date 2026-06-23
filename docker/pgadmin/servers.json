@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ShipFlow Local",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "shipflow_db",
+      "Username": "shipflow",
+      "Password": "shipflow_secret",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass"
+    }
+  }
+}

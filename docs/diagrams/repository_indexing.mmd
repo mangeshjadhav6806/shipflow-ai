@@ -1,0 +1,9 @@
+graph TD
+    Webhook[Git Push / Commit Webhook] -->|Trigger Indexing| Sandbox[Clone Repository Sandbox]
+    Sandbox -->|Source Files| AST[Tree-Sitter AST Engine]
+    AST -->|Symbol Definitions| Extractor[Symbol Extractor]
+    AST -->|Imports & Exports| GraphGen[Dependency Graph Generator]
+    
+    Extractor & GraphGen -->|Metadata Map| Ranker[File PageRank Engine]
+    Ranker -->|Logical Code Nodes| Embed[Embeddings Generator]
+    Embed -->|Vectors| PgVector[(PgVector Database)]

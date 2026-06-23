@@ -1,0 +1,6 @@
+graph TD
+    Supervisor[Orchestrator Run] & Workers[Worker Agents] & Sandbox[Docker Tests Sandbox] -->|Trace Spans SDK| OTEL[OpenTelemetry Collector]
+    OTEL -->|Metrics Aggregator| Grafana[Grafana Dashboard]
+    
+    Workers -->|Token Metrics| DB[(PostgreSQL Token DB)]
+    DB -->|Cost Metrics| Billing[Razorpay Monthly Caps]

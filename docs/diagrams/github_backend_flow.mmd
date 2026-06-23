@@ -1,0 +1,8 @@
+graph TD
+    Webhook[Git Webhook POST Payload] --> Verify[HMAC-SHA256 Secret Verification]
+    Verify -->|Valid| QueueEvent[Publish Inngest Event: github/*]
+    Verify -->|Invalid| Reject[Return HTTP 403 Forbidden]
+    
+    QueueEvent --> Worker[Inngest Worker]
+    Worker -->|Invoke Octokit| GitAPI[GitHub REST API]
+    GitAPI -->|PR Diff / Commits| DBUpdate[Save PR details to PostgreSQL]

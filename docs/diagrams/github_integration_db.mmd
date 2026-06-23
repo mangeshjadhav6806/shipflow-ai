@@ -1,0 +1,7 @@
+graph TD
+    Workspace[Workspace] -->|1:N| Installation[GitHub Installation]
+    Installation -->|1:N| Repository[Connected Repositories]
+    Repository -->|1:N| Branch[Git Branches]
+    Branch -->|1:N| Commit[Commits History]
+    Repository -->|1:N| PullRequest[Pull Requests]
+    Repository -->|1:N| WebhookEvent[Webhook Events logs]

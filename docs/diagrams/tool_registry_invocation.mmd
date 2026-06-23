@@ -1,0 +1,20 @@
+graph TD
+    Agent[Worker Agent] -->|Call Request| Registry[Central Tool Registry]
+    
+    subgraph Registry_Security [Security Sandbox]
+        Registry --> Git[GitHub Tool]
+        Registry --> DB[Prisma DB Tool]
+        Registry --> Search[Repo Search Tool]
+        Registry --> FS[File System Tool]
+        Registry --> Term[Terminal Tool]
+        Registry --> Doc[Documentation Tool]
+        Registry --> Dep[Deployment Tool]
+        Registry --> Notif[Notification Tool]
+        Registry --> Mem[Memory Tool]
+    end
+    
+    Git -->|Octokit| GitHubAPI[GitHub REST API]
+    DB -->|ORM| PostgreSQL[(PostgreSQL)]
+    Search -->|Cosine Match| PgVector[(PgVector DB)]
+    FS -->|Disk IO| Workspace[Local Workspace Directory]
+    Term -->|Exec Command| Docker[Docker Container Sandbox]

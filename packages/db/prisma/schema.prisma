@@ -1,16 +1,945 @@
+// =============================================================================
+// ShipFlow AI — Production Prisma Schema
+// Version: 1.0.0
+// Engine: PostgreSQL 16+ (Neon / AWS RDS)
+// ORM: Prisma 5.14+
+// =============================================================================
+
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = []
 }
+
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
+// =============================================================================
+// ENUMERATIONS
+// =============================================================================
+
+/// Role within a workspace. Controls access permissions.
+enum UserRole {
+  OWNER
+  ADMIN
+  PM
+  DEVELOPER
+  REVIEWER
+  VIEWER
+}
+
+/// Full lifecycle of a Feature from ideation through shipping.
+enum FeatureStatus {
+  DRAFT
+  CLARIFYING
+  READY_FOR_PRD
+  PRD_GENERATED
+  PRD_APPROVED
+  TASKS_CREATED
+  IN_PROGRESS
+  PR_OPEN
+  AI_REVIEWING
+  FIX_REQUIRED
+  RE_REVIEWING
+  READY_FOR_APPROVAL
+  APPROVED
+  SHIPPED
+  ARCHIVED
+}
+
+/// Task execution state.
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+/// Pull request lifecycle states.
+enum PRStatus {
+  DRAFT
+  OPEN
+  CHANGES_REQUESTED
+  APPROVED
+  MERGED
+  CLOSED
+}
+
+/// AI code review session outcomes.
+enum ReviewStatus {
+  PENDING
+  COMMENTED
+  CHANGES_REQUESTED
+  APPROVED
+}
+
+/// Release lifecycle states.
+enum ReleaseStatus {
+  DRAFT
+  PUBLISHED
+  RETRACTED
+}
+
+/// Canary deployment pipeline states.
+enum DeploymentStatus {
+  QUEUED
+  BUILDING
+  SMOKE_TESTING
+  CANARY_ACTIVE
+  PROMOTED
+  FAILED
+  ROLLED_BACK
+}
+
+/// Notification categories routing to different channels.
+enum NotificationType {
+  SYSTEM
+  FEATURE_STATUS_CHANGED
+  PRD_APPROVAL_REQUIRED
+  TASK_ASSIGNED
+  PR_REVIEW_COMPLETED
+  RELEASE_SUCCESS
+  BILLING_ALERT
+}
+
+/// Available AI agent worker types.
+enum AgentType {
+  SUPERVISOR
+  CLARIFICATION
+  PRD_GENERATOR
+  TASK_GENERATOR
+  REPO_ANALYZER
+  CODE_GENERATOR
+  PR_REVIEWER
+  QA_VALIDATOR
+  RELEASE_MANAGER
+}
+
+/// Execution status for an agent run.
+enum AgentStatus {
+  QUEUED
+  RUNNING
+  PAUSED_FOR_APPROVAL
+  SUCCESS
+  FAILED
+  TIMEOUT
+}
+
+/// Subscription tiers.
+enum BillingPlan {
+  FREE
+  STARTER
+  BUSINESS
+  ENTERPRISE
+}
+
+/// Razorpay subscription lifecycle status.
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+/// Supported Git hosting providers.
+enum GitProvider {
+  GITHUB
+  GITLAB
+}
+
+/// Repository access scope.
+enum RepositoryVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+// =============================================================================
+// DOMAIN: IDENTITY & AUTH (BetterAuth-compatible)
+// =============================================================================
+
+/// Core user identity. Central to all multi-tenant relationships.
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String    @id @default(uuid()) @db.Uuid
+  email     String    @unique
   name      String?
+  avatarUrl String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  sessions     Session[]
+  accounts     Account[]
+  memberships  Member[]
+  auditLogs    AuditLog[]
+  verification Verification[]
+  apiKeys      ApiKey[]
+
+  @@index([email])
+}
+
+/// BetterAuth browser session. Invalidated on logout or expiry.
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// OAuth provider link (GitHub, Google). Stores access/refresh tokens.
+model Account {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  provider     String
+  providerId   String
+  accessToken  String?   @db.Text
+  refreshToken String?   @db.Text
+  idToken      String?   @db.Text
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+/// Email / OTP verification tokens.
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String // email or phone
+  value      String // hashed token
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @db.Uuid
+
+  @@index([identifier])
+  @@index([expiresAt])
+}
+
+/// SHA-256 hashed workspace API key for external integrations.
+model ApiKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  userId      String    @db.Uuid
+  name        String
+  keyHash     String    @unique
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+// =============================================================================
+// DOMAIN: MULTI-TENANCY (Organization → Workspace → Member)
+// =============================================================================
+
+/// Top-level billing and ownership entity.
+model Organization {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  workspaces   Workspace[]
+  subscription Subscription?
+
+  @@index([slug])
+}
+
+/// Logical isolation unit for all customer data. Row-level tenant key.
+model Workspace {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
+  name           String
+  slug           String    @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization  Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members       Member[]
+  projects      Project[]
+  features      Feature[]
+  apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
+  webhookEvents WebhookEvent[]
+  credit        Credit?
+  tokenUsages   TokenUsage[]
+  monthlyUsages MonthlyUsage[]
+  invitations   WorkspaceInvitation[]
+
+  @@index([organizationId])
+  @@index([slug])
+}
+
+/// Workspace membership with role-based access control.
+model Member {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  userId      String    @db.Uuid
+  role        UserRole  @default(VIEWER)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace     Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+  preferences   NotificationPreference?
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([role])
+}
+
+/// Pending invitation for a user to join a workspace.
+model WorkspaceInvitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  email       String
+  role        UserRole  @default(VIEWER)
+  token       String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
+  @@index([token])
+}
+
+// =============================================================================
+// DOMAIN: GIT INTEGRATION (Installation → Repository → Branch → Commit)
+// =============================================================================
+
+/// GitHub App installation record for a workspace.
+model GitHubInstallation {
+  id             String   @id @default(uuid()) @db.Uuid
+  workspaceId    String   @db.Uuid
+  installationId String   @unique
+  accountLogin   String
+  accountType    String // "User" or "Organization"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+/// Connected code repository. One per project.
+model Repository {
+  id            String               @id @default(uuid()) @db.Uuid
+  projectId     String               @unique @db.Uuid
+  provider      GitProvider          @default(GITHUB)
+  externalId    String
+  name          String
+  owner         String
+  visibility    RepositoryVisibility @default(PRIVATE)
+  webhookSecret String               @db.Text
+  defaultBranch String               @default("main")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branches     Branch[]
+  pullRequests PullRequest[]
+
+  @@unique([owner, name])
+  @@index([projectId])
+  @@index([provider])
+}
+
+/// Git branch within a repository.
+model Branch {
+  id           String   @id @default(uuid()) @db.Uuid
+  repositoryId String   @db.Uuid
+  name         String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  commits    Commit[]
+  tasks      Task[]
+
+  @@unique([repositoryId, name])
+  @@index([repositoryId])
+}
+
+/// Immutable commit record linked to a branch.
+model Commit {
+  id        String   @id @default(uuid()) @db.Uuid
+  branchId  String   @db.Uuid
+  sha       String
+  message   String   @db.Text
+  author    String
+  createdAt DateTime @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, sha])
+  @@index([branchId])
+}
+
+// =============================================================================
+// DOMAIN: PROJECTS & FEATURES
+// =============================================================================
+
+/// A project groups a repository with its features and releases.
+model Project {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  name        String
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository?
+  features   Feature[]
+  releases   Release[]
+
+  @@index([workspaceId])
+}
+
+/// High-level feature request moving through the AI lifecycle.
+model Feature {
+  id          String        @id @default(uuid()) @db.Uuid
+  workspaceId String        @db.Uuid
+  projectId   String        @db.Uuid
+  title       String
+  description String        @db.Text
+  status      FeatureStatus @default(DRAFT)
+  priority    Int           @default(0) // 0=low, 1=medium, 2=high
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  questions ClarificationQuestion[]
+  prd       PRD?
+  agentRuns AgentRun[]
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([status])
+  @@index([workspaceId, status])
+}
+
+/// AI-generated question to resolve requirements ambiguity.
+model ClarificationQuestion {
+  id         String   @id @default(uuid()) @db.Uuid
+  featureId  String   @db.Uuid
+  question   String   @db.Text
+  options    Json? // Optional multiple-choice options as string[]
+  orderIndex Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  feature Feature              @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  answer  ClarificationAnswer?
+
+  @@index([featureId])
+}
+
+/// Developer/PM answer to a clarification question.
+model ClarificationAnswer {
+  id                      String   @id @default(uuid()) @db.Uuid
+  clarificationQuestionId String   @unique @db.Uuid
+  answer                  String   @db.Text
+  selectedOptions         Json? // Indices of selected multiple-choice options
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  question ClarificationQuestion @relation(fields: [clarificationQuestionId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// DOMAIN: PRODUCT (PRD → Task → TaskDependency)
+// =============================================================================
+
+/// Product Requirements Document generated by the PRD Agent.
+model PRD {
+  id         String    @id @default(uuid()) @db.Uuid
+  featureId  String    @unique @db.Uuid
+  version    Int       @default(1)
+  content    String    @db.Text
+  approvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([featureId])
+}
+
+/// Atomic code task mapped to specific files and a git branch.
+model Task {
+  id            String     @id @default(uuid()) @db.Uuid
+  prdId         String     @db.Uuid
+  branchId      String?    @db.Uuid
+  title         String
+  description   String     @db.Text
+  filesAffected Json? // String[] of absolute file paths
+  status        TaskStatus @default(TODO)
+  orderIndex    Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  prd          PRD           @relation(fields: [prdId], references: [id], onDelete: Cascade)
+  branch       Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  pullRequests PullRequest[]
+
+  // Self-referential dependency edges
+  dependsOn  TaskDependency[] @relation("dependsOn")
+  dependedBy TaskDependency[] @relation("dependedBy")
+
+  @@index([prdId])
+  @@index([status])
+  @@index([prdId, orderIndex])
+}
+
+/// Directed acyclic dependency graph edge between tasks.
+model TaskDependency {
+  id          String @id @default(uuid()) @db.Uuid
+  taskId      String @db.Uuid
+  dependsOnId String @db.Uuid
+
+  task      Task @relation("dependsOn", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn Task @relation("dependedBy", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+  @@index([taskId])
+  @@index([dependsOnId])
+}
+
+// =============================================================================
+// DOMAIN: REVIEW (PullRequest → Review → ReviewComment)
+// =============================================================================
+
+/// GitHub pull request created by the Code Generator agent.
+model PullRequest {
+  id           String    @id @default(uuid()) @db.Uuid
+  repositoryId String    @db.Uuid
+  taskId       String    @db.Uuid
+  number       Int
+  title        String
+  url          String
+  headBranch   String
+  baseBranch   String    @default("main")
+  status       PRStatus  @default(DRAFT)
+  mergedAt     DateTime?
+  closedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  repository  Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reviews     Review[]
+  deployments Deployment[]
+
+  @@unique([repositoryId, number])
+  @@index([taskId])
+  @@index([status])
+}
+
+/// AI code review session against a specific commit SHA.
+model Review {
+  id            String       @id @default(uuid()) @db.Uuid
+  pullRequestId String       @db.Uuid
+  commitSha     String
+  status        ReviewStatus @default(PENDING)
+  summary       String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  pullRequest PullRequest     @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  comments    ReviewComment[]
+
+  @@index([pullRequestId])
+  @@index([status])
+}
+
+/// Inline comment on a specific file line during a review.
+model ReviewComment {
+  id         String   @id @default(uuid()) @db.Uuid
+  reviewId   String   @db.Uuid
+  filePath   String
+  line       Int
+  content    String   @db.Text
+  isResolved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@index([reviewId, isResolved])
+}
+
+// =============================================================================
+// DOMAIN: RELEASE MANAGEMENT
+// =============================================================================
+
+/// Versioned release candidate with changelog for a project.
+model Release {
+  id          String        @id @default(uuid()) @db.Uuid
+  projectId   String        @db.Uuid
+  version     String // Semantic version: "1.2.3"
+  changelog   String        @db.Text
+  status      ReleaseStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, version])
+  @@index([projectId])
+  @@index([status])
+}
+
+/// Canary deployment pipeline event for a pull request.
+model Deployment {
+  id            String           @id @default(uuid()) @db.Uuid
+  pullRequestId String           @db.Uuid
+  vercelId      String           @unique
+  url           String
+  status        DeploymentStatus @default(QUEUED)
+  canaryPercent Int              @default(0) // 0-100%
+  promotedAt    DateTime?
+  failedAt      DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+
+  @@index([pullRequestId])
+  @@index([status])
+}
+
+// =============================================================================
+// DOMAIN: AI AGENT EXECUTION
+// =============================================================================
+
+/// Single execution run by one AI agent worker.
+model AgentRun {
+  id                String      @id @default(uuid()) @db.Uuid
+  featureId         String      @db.Uuid
+  agentType         AgentType
+  status            AgentStatus @default(QUEUED)
+  executionDuration Int? // Milliseconds
+  cost              Decimal?    @db.Decimal(10, 4)
+  errorMessage      String?     @db.Text
+  retryOf           String?     @db.Uuid // Parent run ID if this is a retry
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  feature          Feature           @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  logs             AgentLog[]
+  tokenUsages      TokenUsage[]
+  contextSnapshots ContextSnapshot[]
+  memoryReferences MemoryReference[]
+  retries          AgentRetry[]
+
+  @@index([featureId])
+  @@index([status])
+  @@index([agentType])
+  @@index([featureId, agentType])
+}
+
+/// Structured log line emitted by an agent during execution.
+model AgentLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  agentRunId String   @db.Uuid
+  logLevel   String // "info" | "warn" | "error" | "debug"
+  message    String   @db.Text
+  metadata   Json? // Structured context data
+  createdAt  DateTime @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([agentRunId])
+  @@index([agentRunId, createdAt])
+}
+
+/// Complete prompt context snapshot captured at agent run start.
+model ContextSnapshot {
+  id         String   @id @default(uuid()) @db.Uuid
+  agentRunId String   @unique @db.Uuid
+  snapshot   Json // Full hydrated prompt context object
+  createdAt  DateTime @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+}
+
+/// Short-term memory / vector DB reference used by an agent run.
+model MemoryReference {
+  id           String   @id @default(uuid()) @db.Uuid
+  agentRunId   String   @db.Uuid
+  referenceKey String
+  vectorId     String? // pgvector index key
+  content      String   @db.Text
+  createdAt    DateTime @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([agentRunId])
+  @@index([referenceKey])
+}
+
+/// LLM token consumption record per agent run.
+model TokenUsage {
+  id           String   @id @default(uuid()) @db.Uuid
+  workspaceId  String   @db.Uuid
+  agentRunId   String   @db.Uuid
+  modelName    String // e.g. "gpt-4o", "claude-3-5-sonnet"
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  cost         Decimal  @db.Decimal(10, 4)
+  createdAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agentRun  AgentRun  @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([agentRunId])
+  @@index([workspaceId, modelName])
+}
+
+/// Retry record when an agent run fails and is re-queued.
+model AgentRetry {
+  id          String   @id @default(uuid()) @db.Uuid
+  agentRunId  String   @db.Uuid
+  retryCount  Int      @default(1)
+  errorReason String   @db.Text
+  createdAt   DateTime @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([agentRunId])
+}
+
+/// AI prompt template version for reproducibility and A/B testing.
+model PromptVersion {
+  id        String    @id @default(uuid()) @db.Uuid
+  agentType AgentType
+  version   Int       @default(1)
+  name      String
+  template  String    @db.Text
+  isActive  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([agentType, version])
+  @@index([agentType, isActive])
+}
+
+// =============================================================================
+// DOMAIN: BILLING, PAYMENTS & CREDITS
+// =============================================================================
+
+/// Razorpay-backed subscription for an organization.
+model Subscription {
+  id                 String             @id @default(uuid()) @db.Uuid
+  organizationId     String             @unique @db.Uuid
+  plan               BillingPlan        @default(FREE)
+  status             SubscriptionStatus @default(ACTIVE)
+  razorpayId         String?            @unique
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  canceledAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+  invoices     Invoice[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+/// Razorpay payment transaction linked to a subscription.
+model Payment {
+  id             String   @id @default(uuid()) @db.Uuid
+  subscriptionId String   @db.Uuid
+  amount         Decimal  @db.Decimal(10, 2)
+  currency       String   @default("INR")
+  razorpayId     String   @unique
+  status         String   @default("captured") // Razorpay payment status
+  createdAt      DateTime @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+/// Invoice PDF record for a billing period.
+model Invoice {
+  id             String    @id @default(uuid()) @db.Uuid
+  subscriptionId String    @db.Uuid
+  invoiceNumber  String    @unique
+  pdfUrl         String
+  amount         Decimal   @db.Decimal(10, 2)
+  currency       String    @default("INR")
+  dueDate        DateTime?
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+/// Token credit balance for a workspace (prepaid credits).
+model Credit {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @unique @db.Uuid
+  balance     Decimal  @default(0.0000) @db.Decimal(10, 4)
+  updatedAt   DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  usageHistory CreditUsage[]
+}
+
+/// Individual credit deduction event for auditability.
+model CreditUsage {
+  id          String   @id @default(uuid()) @db.Uuid
+  creditId    String   @db.Uuid
+  amount      Decimal  @db.Decimal(10, 4)
+  description String
+  createdAt   DateTime @default(now())
+
+  credit Credit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  @@index([creditId])
+  @@index([creditId, createdAt])
+}
+
+/// Monthly usage caps for tokens and compute per workspace.
+model MonthlyUsage {
+  id           String   @id @default(uuid()) @db.Uuid
+  workspaceId  String   @db.Uuid
+  billingMonth String // "YYYY-MM"
+  tokenLimit   Int      @default(1000000)
+  tokensUsed   Int      @default(0)
+  computeLimit Int      @default(600) // minutes
+  computeUsed  Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, billingMonth])
+  @@index([workspaceId])
+}
+
+// =============================================================================
+// DOMAIN: NOTIFICATIONS
+// =============================================================================
+
+/// In-app or push notification delivered to a workspace member.
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  memberId  String           @db.Uuid
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  link      String? // Deep-link URL
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([memberId, isRead])
+  @@index([memberId, createdAt])
+}
+
+/// Per-member notification channel preferences.
+model NotificationPreference {
+  id             String   @id @default(uuid()) @db.Uuid
+  memberId       String   @unique @db.Uuid
+  emailEnabled   Boolean  @default(true)
+  slackEnabled   Boolean  @default(false)
+  discordEnabled Boolean  @default(false)
+  inAppEnabled   Boolean  @default(true)
+  slackWebhook   String?  @db.Text
+  discordWebhook String?  @db.Text
+  updatedAt      DateTime @updatedAt
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// DOMAIN: SECURITY & OBSERVABILITY
+// =============================================================================
+
+/// Inbound webhook event from GitHub or Razorpay.
+model WebhookEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  provider    String // "github" | "razorpay"
+  event       String // e.g. "push", "pull_request", "payment.captured"
+  payload     Json
+  signature   String
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([provider, event])
+  @@index([processed])
+}
+
+/// Immutable write-once audit trail of all workspace actions.
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  actorId     String   @db.Uuid
+  action      String // e.g. "feature.created", "member.role.changed"
+  target      String // Resource name + ID
+  metadata    Json? // Before/after field snapshot
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User      @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([actorId])
+  @@index([workspaceId, createdAt])
+  @@index([action])
 }

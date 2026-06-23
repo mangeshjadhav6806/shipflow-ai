@@ -1,0 +1,38 @@
+graph TD
+    User(["Developer / PM (Browser)"])
+    
+    subgraph Vercel [Vercel Cloud Platform]
+        NextApp["Next.js 14 Web Portal"]
+        TRPCApi["tRPC Router Layer"]
+        BAuth["BetterAuth Service"]
+    end
+    
+    subgraph Engine [Workflow Orchestration]
+        InngestCloud["Inngest Cloud Control"]
+        InngestEngine["Inngest Workers (Serverless)"]
+    end
+    
+    subgraph DB [Data Persistence]
+        PrismaClient["Prisma Client"]
+        Postgres[(PostgreSQL DB)]
+    end
+    
+    subgraph Integrations [Third-Party Services]
+        GitHubAPI["GitHub API / Octokit"]
+        AISDK["Vercel AI SDK (LLMs)"]
+        RazorPayAPI["Razorpay Payments"]
+    end
+    
+    User -->|HTTPS| NextApp
+    NextApp -->|Internal RPC Call| TRPCApi
+    TRPCApi -->|Database Query| PrismaClient
+    BAuth -->|Session Storage| PrismaClient
+    PrismaClient -->|PgPool| Postgres
+    
+    NextApp -->|Dispatch Webhooks| InngestCloud
+    InngestCloud -->|Trigger Workflow Jobs| InngestEngine
+    InngestEngine -->|Execute API Actions| TRPCApi
+    
+    InngestEngine -->|Repo Scans / PR Modifies| GitHubAPI
+    InngestEngine -->|LLM Prompts & Schemas| AISDK
+    TRPCApi -->|Checkout Session| RazorPayAPI

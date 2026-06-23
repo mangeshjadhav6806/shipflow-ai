@@ -1,0 +1,10 @@
+graph TD
+    Repo[Git Repository] -->|1. Clone & Fetch| Parser[AST Parser / Tree-Sitter]
+    Parser -->|2. Deconstruct Code| Chunking[Logical Code Chunking]
+    Chunking -->|3. Code Blocks| EmbeddingGen[Embeddings Generator]
+    EmbeddingGen -->|4. Vector Vectors| PgVector[(PgVector Database)]
+    
+    Developer[Developer Request] -->|5. Query| VectorSearch{Semantic Match}
+    VectorSearch -->|6. Cosine Similarity Query| PgVector
+    PgVector -->|7. Match Candidates| Retriever[Dependency Graph Resolver]
+    Retriever -->|8. Fetch Context Elements| LLM[LLM context window]

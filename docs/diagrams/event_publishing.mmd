@@ -1,0 +1,5 @@
+graph TD
+    Mutation[tRPC Mutation Execute] -->|Save DB Transaction| DB[(PostgreSQL)]
+    Mutation -->|Publish Event| Inngest[Inngest Client]
+    Inngest -->|Event Queue payload| Queue[Workers Queue]
+    Queue -->|Process Job Step| Worker[Serverless Agent Worker]

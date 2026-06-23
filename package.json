@@ -1,18 +1,27 @@
 {
   "name": "shipflow-ai",
   "private": true,
+  "packageManager": "pnpm@11.8.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tooling/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @shipflow/web",
-    "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "db:generate": "npm run db:generate -w @shipflow/db",
-    "db:push": "npm run db:push -w @shipflow/db"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @shipflow/db db:generate",
+    "db:push": "pnpm --filter @shipflow/db db:push"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.4",
     "typescript": "^5.4.5"
   },
   "optionalDependencies": {

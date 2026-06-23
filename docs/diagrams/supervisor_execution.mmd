@@ -1,0 +1,17 @@
+graph TD
+    Inngest[Inngest Event Listener] -->|Instantiate Run| Supervisor[Supervisor Agent]
+    
+    subgraph Supervisor_Core [Orchestration Core]
+        Supervisor --> PlanGen[Execution Planner]
+        Supervisor --> StateMgr[State Transitions Manager]
+        Supervisor --> HealthMonitor[Health & Timeout Watchdog]
+        Supervisor --> RecoveryHandler[Exception & Recovery Handler]
+    end
+    
+    subgraph Storage [State Persistence]
+        StateMgr -->|Query/Update| Redis[(Redis Short-Term)]
+        StateMgr -->|Persist| DB[(PostgreSQL Run DB)]
+    end
+
+    Supervisor -->|Dispatch Work| Workers[AI Worker Agent Pool]
+    Workers -->|Output Status / Schema| Supervisor

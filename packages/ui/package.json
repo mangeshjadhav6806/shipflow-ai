@@ -10,7 +10,9 @@
   },
   "scripts": {
     "lint": "eslint src/",
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests in @shipflow/ui\""
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
@@ -23,6 +25,8 @@
     "react-dom": "^18.0.0"
   },
   "devDependencies": {
+    "@shipflow/eslint-config": "workspace:*",
+    "@shipflow/typescript-config": "workspace:*",
     "@types/react": "^18.3.2",
     "eslint": "^8.57.0",
     "typescript": "^5.4.5"

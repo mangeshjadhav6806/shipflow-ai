@@ -1,0 +1,11 @@
+graph TD
+    ClientUI[Client Workspace UI] -->|User Updates| LocalState[React State / Store]
+    LocalState -->|Optimistic UI Render| ClientUI
+    
+    LocalState -->|tRPC Mutation Request| ServerState{TanStack Query Cache}
+    ServerState -->|API Handshake| Postgres[(Postgres DB)]
+    
+    Postgres -->|Inngest Workflow Done| Inngest[Inngest Server]
+    Inngest -->|Dispatch SSE Event| EventSourceClient[SSE Event Source Node]
+    EventSourceClient -->|Live Updates| ServerState
+    ServerState -->|Hydrate UI| ClientUI

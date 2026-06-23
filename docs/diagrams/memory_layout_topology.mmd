@@ -1,0 +1,16 @@
+graph TD
+    Agent[AI Agent] --> MemoryRouter{Memory Router}
+    
+    subgraph Memory_Tiers [AI Memory Hierarchy]
+        MemoryRouter -->|Task Step Logs| Working[Working Memory]
+        MemoryRouter -->|Chat Threads| Conversation[Conversation Memory]
+        MemoryRouter -->|Workspace Rules| Workspace[Workspace Memory]
+        MemoryRouter -->|AST Embeddings| Repository[Repository Memory]
+    end
+    
+    subgraph Persistence [Storage Providers]
+        Working -->|Fast Cache| Redis[(Redis)]
+        Conversation -->|Relational| Postgres[(PostgreSQL)]
+        Workspace -->|Settings| Postgres
+        Repository -->|Vector Index| PgVector[(PgVector DB)]
+    end

@@ -1,0 +1,6 @@
+graph TD
+    AgentRun[AgentRun / Supervisor Run] -->|1:N| AgentLog[AgentLog Steps]
+    AgentRun -->|1:1| ContextSnapshot[Context Snapshots]
+    AgentRun -->|1:N| MemoryReference[Short-term / Vector References]
+    AgentRun -->|1:N| TokenUsage[Token Consumptions]
+    AgentRun -->|1:N| RetryHistory[Retry & Failures Logs]

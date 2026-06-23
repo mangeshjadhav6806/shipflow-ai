@@ -3,11 +3,21 @@
   "references": [
     { "path": "apps/web" },
     { "path": "packages/api" },
-    { "path": "packages/db" },
-    { "path": "packages/ui" },
-    { "path": "packages/config" },
-    { "path": "packages/github" },
     { "path": "packages/ai" },
-    { "path": "packages/billing" }
+    { "path": "packages/auth" },
+    { "path": "packages/billing" },
+    { "path": "packages/config" },
+    { "path": "packages/db" },
+    { "path": "packages/events" },
+    { "path": "packages/github" },
+    { "path": "packages/logger" },
+    { "path": "packages/shared" },
+    { "path": "packages/types" },
+    { "path": "packages/ui" },
+    { "path": "packages/utils" },
+    { "path": "packages/validators" },
+    { "path": "tooling/typescript-config" },
+    { "path": "tooling/eslint-config" },
+    { "path": "tooling/prettier-config" }
   ]
 }

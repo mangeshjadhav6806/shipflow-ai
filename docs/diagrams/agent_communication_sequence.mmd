@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant PM as Developer / PM
+    participant SV as Supervisor Agent
+    participant CL as Clarification Agent
+    participant PR as PRD Generator
+    participant TS as Task Generator
+    participant RE as Repo Analyzer
+    participant CG as Code Generator
+    participant QA as QA Validator
+    
+    PM->>SV: Submit Feature Request
+    SV->>CL: Emit "feature.created"
+    CL->>PM: Request Clarification
+    PM->>CL: Submit Clarifications
+    CL->>SV: Emit "feature.clarified"
+    SV->>PR: Emit "prd.generate"
+    PR->>PM: Approve PRD Gate
+    PM->>SV: Approve PRD
+    SV->>TS: Emit "tasks.generate"
+    TS->>RE: Scan codebase
+    RE->>CG: Emit "task.start"
+    CG->>QA: Emit "code.generated"
+    QA->>SV: Emit "qa.passed"
+    SV->>PM: Approve Merge Gate

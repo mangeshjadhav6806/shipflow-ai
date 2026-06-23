@@ -1,0 +1,17 @@
+graph LR
+    Agent[AI Worker Agent] -->|Tool Invocation Protocol| Registry[Tool Registry]
+    subgraph Security_Gate [Sandboxed Security Layer]
+        Registry --> GitTool[GitHub Tool]
+        Registry --> DBTool[Database Tool]
+        Registry --> SearchTool[Repo Search Tool]
+        Registry --> DocTool[Documentation Tool]
+        Registry --> TermTool[Terminal Tool]
+        Registry --> FSTool[File System Tool]
+        Registry --> DeployTool[Deployment Tool]
+        Registry --> NotifyTool[Notification Tool]
+    end
+    GitTool -->|Octokit API| GitHub[GitHub API]
+    DBTool -->|Prisma| PG[(PostgreSQL)]
+    SearchTool -->|Semantic Index| PgVector[(PgVector DB)]
+    TermTool -->|Docker Execution| Sandbox[Isolated Container]
+    FSTool -->|Local Read/Write| Workspace[Git Workspace]

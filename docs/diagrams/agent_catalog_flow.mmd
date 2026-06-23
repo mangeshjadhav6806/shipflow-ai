@@ -1,0 +1,10 @@
+graph TD
+    Clarify[Clarification Agent] --> PRD[PRD Generator Agent]
+    PRD --> Task[Task Generator Agent]
+    Task --> Repo[Repository Analysis Agent]
+    Repo --> Code[Code Generation Agent]
+    Code --> Review[PR Review Agent]
+    Review --> QA[QA Validation Agent]
+    QA --> Release[Release Readiness Agent]
+    
+    Workers[Agent Pool] --> Notify[Notification Agent]

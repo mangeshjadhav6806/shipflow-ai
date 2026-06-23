@@ -1,0 +1,12 @@
+graph TD
+    CodeGen[Code Generator] --> Commit[Branch Commit]
+    Commit --> Build[Build & Compile Checks]
+    
+    Build -->|Pass| Verify[Run Integration Tests]
+    Build -->|Fail: Parse Errors| AutoFix[Auto-Patching Loop]
+    
+    Verify -->|Pass| Approved[Merge & Close Task]
+    Verify -->|Fail: Test Failure| AutoFix
+    
+    AutoFix -->|Retry Limit Exceeded| DLQ[Dead Letter Queue / Notify PM]
+    AutoFix -->|Fix Patch Commit| Build

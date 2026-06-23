@@ -1,0 +1,16 @@
+graph TD
+    Agent[Supervisor / Worker] --> Router[AI Model Router]
+    
+    subgraph Task_Classification [Task Context Classifier]
+        Router -->|PR Review & Architecture| Claude[Claude 3.5 Sonnet]
+        Router -->|Code Generation & Logic| GPT4[GPT-4o]
+        Router -->|Large File AST Indexing| GeminiPro[Gemini 1.5 Pro]
+        Router -->|Q&A Chat / Quick Logs| GeminiFlash[Gemini 1.5 Flash]
+    end
+    
+    subgraph Fallback_Mechanism [Resilience Framework]
+        Claude -->|API Error / Limit| GPT4_Fallback[GPT-4o]
+        GPT4 -->|API Error / Limit| Claude_Fallback[Claude 3.5 Sonnet]
+        GeminiPro -->|Timeout / Fail| GPT4_Fallback
+        GeminiFlash -->|Error| GPT4Mini[GPT-4o-mini]
+    end

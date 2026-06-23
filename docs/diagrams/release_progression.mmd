@@ -1,0 +1,8 @@
+graph TD
+    Build[Vercel Production Build] --> Smoke[Run Smoke Integration Tests]
+    Smoke -->|Pass| DeployCanary[Canary Deploy: 10% Traffic]
+    Smoke -->|Fail| RevertCommit[Revert main commits]
+    
+    DeployCanary --> Monitor{Monitor Logs & Latency}
+    Monitor -->|Errors Detected| RevertCanary[Revert Deployment Alias]
+    Monitor -->|Healthy - 10 Min| PromoteFull[Promote 100% Production Traffic]

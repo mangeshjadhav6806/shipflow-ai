@@ -1,0 +1,7 @@
+graph TD
+    Req[Prompt Request] --> Router[Model Router]
+    Router -->|Select Model| LLM[LLM API Endpoint]
+    LLM -->|Stream Response chunk| Stream[Stream response to browser via SSE]
+    LLM -->|Function Call| Tool[Execute Registry Tool]
+    Tool -->|Return Outcome| LLM
+    LLM -->|Complete| TokenCalc[Log Input / Output tokens cost]

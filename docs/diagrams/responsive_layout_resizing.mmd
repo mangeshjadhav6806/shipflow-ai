@@ -1,0 +1,6 @@
+graph TD
+    Viewport{Browser Breakpoint}
+    
+    Viewport -->|`<640px` Mobile| MobileLayout[1-Col Grid: Collapsed Sidebar, Code Explorer List View]
+    Viewport -->|`641px-1024px` Tablet| TabletLayout[2-Col Grid: Flex Sidebars, Stacked Code Diff Layout]
+    Viewport -->|`>1025px` Desktop| DesktopLayout[3-Col Grid: Sidebar Panel, Diff Editor Canvas, Logs Timelines]

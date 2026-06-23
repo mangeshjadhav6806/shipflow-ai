@@ -1,0 +1,18 @@
+graph TD
+    Login[Login Page] --> AuthCheck{Session Valid?}
+    AuthCheck -->|No| Login
+    AuthCheck -->|Yes| Dash[Dashboard Page]
+    
+    Dash --> SwitchWorkspace[Select Workspace]
+    SwitchWorkspace --> Projects[Projects Page]
+    
+    Projects --> FeatureView[Feature Request Details]
+    Projects --> TaskBoard[Kanban Task Board]
+    Projects --> RepoExplore[Repository Explorer]
+    
+    FeatureView --> ClarifyChat[Clarification Q&A Screen]
+    ClarifyChat --> PRDEditor[PRD Editor Preview]
+    
+    TaskBoard --> CodeReview[PR Review Center]
+    CodeReview --> QAPanel[QA Sandbox Panel]
+    QAPanel --> ReleaseMgr[Release Management]

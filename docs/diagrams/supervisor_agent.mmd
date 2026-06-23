@@ -1,0 +1,34 @@
+graph TD
+    User([Developer / PM]) --> NextJS[Next.js Portal]
+    NextJS -->|Emit Event| Inngest[Inngest Workflow]
+    Inngest -->|Instantiate| Supervisor[Supervisor Agent / Orchestrator]
+    
+    subgraph Worker_Agents [Worker Agent Pool]
+        Clarify[Clarification Agent]
+        PRD[PRD Generator]
+        Task[Task Generator]
+        Repo[Repository Analysis]
+        CodeGen[Code Generator]
+        Review[PR Reviewer]
+        QA[QA Validator]
+        Release[Release Readiness]
+    end
+    
+    subgraph Registry [Resource Layers]
+        Tools[Tool Registry]
+        Memory[Memory Store]
+    end
+
+    Supervisor -->|1. Dispatch & Monitor| Clarify
+    Supervisor -->|2. Dispatch & Monitor| PRD
+    Supervisor -->|3. Dispatch & Monitor| Task
+    Supervisor -->|4. Dispatch & Monitor| Repo
+    Supervisor -->|5. Dispatch & Monitor| CodeGen
+    Supervisor -->|6. Dispatch & Monitor| Review
+    Supervisor -->|7. Dispatch & Monitor| QA
+    Supervisor -->|8. Dispatch & Monitor| Release
+
+    Clarify & PRD & Task & Repo & CodeGen & Review & QA & Release -->|Invoke Tools| Tools
+    Clarify & PRD & Task & Repo & CodeGen & Review & QA & Release -->|Read / Write| Memory
+    
+    Supervisor -->|Maintain State & Retries| Memory

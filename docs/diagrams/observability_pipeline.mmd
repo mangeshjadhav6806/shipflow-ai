@@ -1,0 +1,7 @@
+graph TD
+    NextJS[Next.js App] & Inngest[Inngest Workers] & Agent[Supervisor Agent] -->|Telemetry SDK| OpenTelemetry[OpenTelemetry Collector]
+    OpenTelemetry -->|Trace Logs| Jaeger[Jaeger / Prometheus / Grafana]
+    
+    NextJS -->|Exceptions| Sentry[Sentry Error Tracker]
+    NextJS -->|User Interactions| PostHog[PostHog Analytics]
+    NextJS -->|Core Web Vitals| Vercel[Vercel Web Analytics]

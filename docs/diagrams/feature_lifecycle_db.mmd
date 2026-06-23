@@ -1,0 +1,9 @@
+graph TD
+    Feature[Feature] -->|1:N| Question[Clarification Question]
+    Question -->|1:1| Answer[Clarification Answer]
+    Feature -->|1:1| PRD[PRD Markdown]
+    PRD -->|1:N| Task[Task Checklists]
+    Task -->|1:1| PullRequest[Pull Request Reference]
+    PullRequest -->|1:N| Review[AI Code Review Session]
+    Review -->|1:N| ReviewComment[Inline Comments]
+    PullRequest -->|1:1| Release[Release Candidates]

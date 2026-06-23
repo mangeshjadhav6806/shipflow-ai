@@ -1,0 +1,10 @@
+graph TD
+    Req[Incoming HTTP tRPC request] --> M1[Authentication: BetterAuth JWT check]
+    M1 --> M2[Authorization: Role Permission lookup]
+    M2 --> M3[Workspace Resolution: WorkspaceId check]
+    M3 --> M4[Rate Limiting: Token Bucket redis validation]
+    M4 --> M5[Validation: Zod schema check]
+    M5 --> M6[Logging & Telemetry: Set Correlation ID]
+    M6 --> Proc[Execute Procedure Logic]
+    Proc --> Publish[Event Publishing: Inngest Client event]
+    Publish --> Res[Return HTTP Response payload]

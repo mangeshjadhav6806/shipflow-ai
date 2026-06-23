@@ -1,0 +1,19 @@
+graph TD
+    Start([Feature Request]) --> Clarify[Clarification Agent]
+    Clarify --> PRD[PRD Generator]
+    PRD --> Gate1{Gate 1: PM PRD Approval}
+    
+    Gate1 -->|Approved| Tasks[Task Generator]
+    Gate1 -->|Rejected / Edit| PRD
+    
+    Tasks --> CodeGen[Code Generator]
+    CodeGen --> Review[PR Review Agent]
+    Review --> QA[QA Validation]
+    QA --> Gate2{Gate 2: Dev Lead PR Merge Approval}
+    
+    Gate2 -->|Approved| Deploy[Release Readiness / Canary]
+    Gate2 -->|Rejected / Fixes| CodeGen
+    
+    Deploy --> Gate3{Gate 3: Deployment Production Gate}
+    Gate3 -->|Approved| Prod([Production Release])
+    Gate3 -->|Rejected / Rollback| Rollback[Automatic Rollback]

@@ -1,0 +1,5 @@
+graph TD
+    InngestEvent[Inngest Worker Step Completed] -->|Emit Event| EventStream[Next.js Server API: /api/inngest/stream]
+    EventStream -->|SSE text/event-stream| EventSourceClient[Browser EventSource Client]
+    EventSourceClient -->|Dispatch Action| Store[React State Store]
+    Store -->|Update Timeline Component| LogTimeline[Logs Feed UI Panel]

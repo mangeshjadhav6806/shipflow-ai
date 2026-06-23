@@ -1,0 +1,11 @@
+graph TD
+    Merge([PR Merged to main]) --> Build[Vercel Production Build]
+    Build --> Smoke[Sandbox Smoke Tests]
+    Smoke -->|Pass| Canary[Canary Deploy: 10% Traffic]
+    Smoke -->|Fail| Rollback[Automatic Rollback]
+    
+    Canary --> Monitor{Monitor Logs & Latency}
+    Monitor -->|Healthy - 10 Min| Promote[Full Production Promotion: 100% Traffic]
+    Monitor -->|Errors Detected| Rollback
+    
+    Promote --> Live([Live in Production])

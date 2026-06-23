@@ -1,0 +1,11 @@
+graph TD
+    User([User])
+    Organization[Organization]
+    
+    Organization -->|1:N| Workspace[Workspace]
+    Workspace -->|1:N| Project[Project]
+    Workspace -->|1:N| Member[Member]
+    Member -->|1:1| Role[Role Mapping]
+    User -->|1:N| Member
+    Workspace -->|1:1| Subscription[Subscription Tiers]
+    Workspace -->|1:1| Credit[Workspace Credit Balance]

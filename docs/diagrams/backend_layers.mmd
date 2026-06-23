@@ -1,0 +1,21 @@
+graph TD
+    Client[Web App Client] -->|tRPC / HTTP / WSS| APILayer[tRPC Router Layer]
+    APILayer -->|Context Procedures| Middleware[Middleware Filters pipeline]
+    
+    subgraph Core_Business_Services [Service Layer]
+        Middleware --> Services[Workspace / Feature / Git / AI Services]
+    end
+    
+    subgraph Data_Isolation_Layer [Repository Layer]
+        Services --> Repositories[Entity Repositories]
+        Repositories --> DBClient[Prisma Client DB wrapper]
+    end
+    
+    DBClient --> Postgres[(PostgreSQL DB)]
+    
+    subgraph Third_Party_Adapters [Infrastructure Layer]
+        Services --> GitApp[Octokit / GitHub App client]
+        Services --> InngestCloud[Inngest Client queues]
+        Services --> AISDK[Vercel AI SDK wrappers]
+        Services --> BillingGateway[Razorpay SDK client]
+    end

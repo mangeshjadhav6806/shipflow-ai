@@ -1,10 +1,10 @@
-export { Button, buttonVariants, type ButtonProps } from "./components/button";
+export { Button, type ButtonProps,buttonVariants } from "./components/button";
 export {
   Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardDescription,
   CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "./components/card";
 export { cn } from "./lib/utils";

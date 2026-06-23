@@ -1,0 +1,9 @@
+graph TD
+    Exception[Application Exception Raised] --> Match{Exception Class}
+    
+    Match -->|ZodValidationError| Format[tRPC BAD_REQUEST Error]
+    Match -->|PrismaQueryError| DBError[tRPC INTERNAL_SERVER_ERROR / Log Traces]
+    Match -->|GitHubAppError| GitError[tRPC BAD_GATEWAY / Queue retry]
+    Match -->|AIServiceError| AIError[Router fallbacks fallback model]
+    
+    DBError & GitError & AIError --> Trace[Correlate request trace logs via correlation ID]

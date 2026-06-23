@@ -9,9 +9,19 @@
   },
   "scripts": {
     "lint": "eslint src/",
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests in @shipflow/ai\""
+  },
+  "dependencies": {
+    "@shipflow/shared": "workspace:*",
+    "@shipflow/logger": "workspace:*",
+    "@shipflow/types": "workspace:*",
+    "@shipflow/utils": "workspace:*"
   },
   "devDependencies": {
+    "@shipflow/eslint-config": "workspace:*",
+    "@shipflow/typescript-config": "workspace:*",
     "eslint": "^8.57.0",
     "typescript": "^5.4.5"
   }

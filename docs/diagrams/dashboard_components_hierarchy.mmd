@@ -1,0 +1,16 @@
+graph TD
+    DashLayout[Dashboard Workspace Layout] --> SidebarComponent[Sidebar Panel]
+    DashLayout --> NavbarComponent[Navbar Header]
+    DashLayout --> MainContent[Main Content Canvas]
+    
+    SidebarComponent --> Switcher[Workspace Context Switcher]
+    SidebarComponent --> NavigationLinks[Navigation Anchors list]
+    SidebarComponent --> SystemStatus[Credit Balance / limits indicators]
+    
+    NavbarComponent --> SearchPallette[CMD+K Command Palette Trigger]
+    NavbarComponent --> NotificationHub[Notification Indicator Bell]
+    NavbarComponent --> UserMenu[BetterAuth Account Dropdown]
+    
+    MainContent --> MetricsGrid[DORA / AI Usage Cards]
+    MainContent --> Timeline[Supervisor Run Timeline]
+    MainContent --> ActivityFeed[Agents Realtime Logs Feed]

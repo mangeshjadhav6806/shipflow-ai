@@ -1,0 +1,12 @@
+graph TD
+    FeatureService[FeatureService] --> ClarificationService[ClarificationService]
+    FeatureService --> PRDService[PRDService]
+    PRDService --> TaskService[TaskService]
+    TaskService --> GitHubService[GitHubService]
+    GitHubService --> ReviewService[ReviewService]
+    ReviewService --> QAService[QAService]
+    QAService --> ReleaseService[ReleaseService]
+    
+    WorkspaceService[WorkspaceService] --> BillingService[BillingService]
+    FeatureService & TaskService & ReviewService & ReleaseService --> NotificationService[NotificationService]
+    FeatureService & TaskService & ReviewService & ReleaseService --> AnalyticsService[AnalyticsService]

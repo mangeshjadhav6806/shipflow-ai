@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph PM_Phase [Requirements Phase]
+        ClarifyAgent["Clarification Agent"]
+        PRDGenAgent["PRD Generator Agent"]
+    end
+    
+    subgraph Dev_Phase [Development Phase]
+        TaskGenAgent["Task Generator Agent"]
+        RepoAnalyzeAgent["Repository Analysis Agent"]
+        CodeWriterAgent["Code Generator Agent"]
+    end
+    
+    subgraph QA_Phase [Verification Phase]
+        PRReviewAgent["PR Review Agent"]
+        QAValidationAgent["QA Validation Agent"]
+        ReleaseReadinessAgent["Release Readiness Agent"]
+    end
+    
+    ClarifyAgent -->|Structured Answers| PRDGenAgent
+    PRDGenAgent -->|Detailed PRD| TaskGenAgent
+    TaskGenAgent -->|Target Files| RepoAnalyzeAgent
+    RepoAnalyzeAgent -->|AST Map & Code Templates| CodeWriterAgent
+    CodeWriterAgent -->|PR Code Commit| PRReviewAgent
+    PRReviewAgent -->|Refactoring Patch| CodeWriterAgent
+    PRReviewAgent -->|Approve PR| QAValidationAgent
+    QAValidationAgent -->|Verified Build| ReleaseReadinessAgent

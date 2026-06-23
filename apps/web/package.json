@@ -6,11 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests in @shipflow/web\""
   },
   "dependencies": {
-    "@shipflow/api": "*",
-    "@shipflow/ui": "*",
+    "@shipflow/api": "workspace:*",
+    "@shipflow/ui": "workspace:*",
+    "@shipflow/auth": "workspace:*",
+    "@shipflow/types": "workspace:*",
+    "@shipflow/shared": "workspace:*",
+    "@shipflow/utils": "workspace:*",
     "@tanstack/react-query": "^4.36.1",
     "@trpc/client": "^10.45.2",
     "@trpc/next": "^10.45.2",
@@ -21,6 +27,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@shipflow/eslint-config": "workspace:*",
+    "@shipflow/typescript-config": "workspace:*",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",

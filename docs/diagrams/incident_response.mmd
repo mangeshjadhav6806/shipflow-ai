@@ -1,0 +1,8 @@
+graph TD
+    Alert[Exception Raised Sentry / Prometheus] --> Router{Severity Level}
+    Router -->|Low / Info| Log[Audit Trail Log]
+    Router -->|Medium / Warning| SlackAlert[Dispatch Slack Alert payload]
+    Router -->|Critical / Fatal| IncidentTrigger[Trigger PagerDuty Escalation]
+    
+    IncidentTrigger --> Engineer[Assign On-Call Engineer]
+    Engineer --> Resolve[Revert Deployment / Run Recovery Runbooks]

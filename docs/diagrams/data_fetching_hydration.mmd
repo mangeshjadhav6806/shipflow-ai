@@ -1,0 +1,9 @@
+graph TD
+    ClientReq[Route Requested] --> RSCFetch[Server Page: prefetchQuery tRPC]
+    RSCFetch --> DBRead[(PostgreSQL Read)]
+    DBRead --> ServerHTML[Prerender HTML + Dehydrated state JSON]
+    
+    ServerHTML --> Browser[Browser Hydration]
+    Browser --> TanstackInit[TanStack Query Hydrates Cache]
+    TanstackInit --> ClientRender[React components bind to trpc.useQuery]
+    ClientRender -->|Page scroll / interactions| InfiniteFetch[Client fetchNextPage mutations]

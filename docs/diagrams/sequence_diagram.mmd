@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor Developer as Product Developer / PM
+    participant NextJS as Web App (Next.js)
+    participant Inngest as Inngest Engine
+    participant Agent as AI Agent Cluster
+    participant GitHub as GitHub Webhook/API
+    participant DB as PostgreSQL DB
+
+    Developer->>NextJS: Submits Feature Idea
+    NextJS->>DB: Save raw input
+    NextJS->>Inngest: Publish 'feature.created'
+    activate Inngest
+    Inngest->>Agent: Run Clarification Agent
+    Agent->>NextJS: Send Questions payload
+    Developer->>NextJS: Complete questions form
+    NextJS->>Inngest: Publish 'feature.clarified'
+    Inngest->>Agent: Run PRD Generator Agent
+    Agent->>DB: Save PRD markdown
+    Inngest->>Agent: Run Task Generator Agent
+    Agent->>DB: Save Task Checklist items
+    Inngest->>Agent: Run Repository Analysis & Code Generation
+    Agent->>GitHub: Create branch, commit files, open PR
+    deactivate Inngest
+    
+    GitHub->>NextJS: Webhook: PR Opened
+    NextJS->>Inngest: Publish 'github/pr.opened'
+    activate Inngest
+    Inngest->>Agent: Run PR Review Agent
+    Agent->>GitHub: Post inline code comments
+    Inngest->>Agent: Run QA Validation Agent
+    Agent->>NextJS: Run serverless test suite
+    Agent->>GitHub: Approve Pull Request
+    Inngest->>GitHub: Merge pull request to main
+    Inngest->>Agent: Run Release Readiness Agent
+    Agent->>NextJS: Publish release changelogs & deploy Vercel
+    deactivate Inngest

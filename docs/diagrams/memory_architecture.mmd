@@ -1,0 +1,16 @@
+graph TD
+    Agent[AI Agent] --> MemoryRouter{Memory Router}
+    
+    subgraph Memory_Tiers [AI Memory Hierarchy]
+        MemoryRouter -->|Step Context / Agent state| ShortTerm[Short-Term Execution Memory]
+        MemoryRouter -->|Chat History / Messages| ConvMemory[Conversation Memory]
+        MemoryRouter -->|Workspace Rules / Prompt Templates| WorkMemory[Workspace Memory]
+        MemoryRouter -->|Embeddings / Code Structure| RepoMemory[Repository Memory]
+    end
+    
+    subgraph Storage [Physical Storage Layer]
+        ShortTerm -->|Read/Write| Redis[(Redis Cache)]
+        ConvMemory -->|Relational Logs| Postgres[(PostgreSQL)]
+        WorkMemory -->|Configuration| Postgres
+        RepoMemory -->|Semantic Search| PgVector[(PgVector DB)]
+    end

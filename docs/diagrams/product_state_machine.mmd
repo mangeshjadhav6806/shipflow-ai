@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> CLARIFYING : feature.created (Clarification Agent)
+    CLARIFYING --> READY_FOR_PRD : feature.clarified (Clarification Agent)
+    READY_FOR_PRD --> PRD_GENERATED : prd.generate (PRD Generator)
+    PRD_GENERATED --> PRD_APPROVED : prd.approved (PM)
+    PRD_APPROVED --> TASKS_CREATED : tasks.generate (Task Generator)
+    TASKS_CREATED --> IN_PROGRESS : task.start (System)
+    IN_PROGRESS --> PR_OPEN : github.pr.opened (Repository Analyzer)
+    PR_OPEN --> AI_REVIEWING : github.pr.review_started (PR Review Agent)
+    AI_REVIEWING --> FIX_REQUIRED : github.pr.review_failed (PR Review Agent)
+    FIX_REQUIRED --> RE_REVIEWING : github.pr.patch_submitted (Code Gen Agent)
+    RE_REVIEWING --> AI_REVIEWING : github.pr.review_started (PR Review Agent)
+    AI_REVIEWING --> READY_FOR_APPROVAL : github.pr.review_passed (PR Review Agent)
+    READY_FOR_APPROVAL --> APPROVED : release.approved (PM / QA Agent)
+    APPROVED --> SHIPPED : release.shipped (Release Readiness Agent)
+    SHIPPED --> [*]
+    AnyState --> ARCHIVED : feature.archived

@@ -1,0 +1,7 @@
+graph TD
+    Organization[Organization] -->|1:1| Subscription[Subscription]
+    Subscription -->|1:N| Invoice[Invoices Records]
+    Subscription -->|1:N| Payment[Payment Transactions]
+    Workspace[Workspace] -->|1:1| Credit[Credit Balance]
+    Workspace -->|1:N| TokenConsumption[LLM Token Log]
+    Workspace -->|1:N| MonthlyUsage[Monthly Usage Caps]

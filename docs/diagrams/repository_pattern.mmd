@@ -1,0 +1,4 @@
+graph LR
+    Service[Service Module] -->|Invokes Interface| RepoInterface[Repository Interface]
+    RepoInterface -->|Concrete Query| PrismaRepo[Prisma Repository implementation]
+    PrismaRepo -->|SELECT / UPDATE| PrismaClient[Prisma Client ORM]
