@@ -1,0 +1,21 @@
+{
+  "name": "shipflow-ai",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @shipflow/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "npm run db:generate -w @shipflow/db",
+    "db:push": "npm run db:push -w @shipflow/db"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "optionalDependencies": {
+    "@next/swc-win32-x64-msvc": "^14.2.33"
+  }
+}
