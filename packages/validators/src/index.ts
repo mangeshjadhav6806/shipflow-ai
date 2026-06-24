@@ -8,4 +8,9 @@ export const featureRequestSchema = z.object({
 // Re-export RBAC validation schemas
 export * from "./rbac";
 export * from "./discovery";
+export * from "./prd";
+export * from "./planning";
+export * from "./repository";
+
+
 

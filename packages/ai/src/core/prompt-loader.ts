@@ -5,6 +5,8 @@
 import { prisma } from "@shipflow/db";
 import { AgentType } from "@prisma/client";
 import { logger } from "@shipflow/logger";
+import { planningGenerationPrompt } from "../prompts/planning/v1";
+import { repositoryAnalysisPrompt, repositorySearchPrompt } from "../prompts/repository";
 
 // Standard prompt fallbacks in case the database doesn't have an active version.
 const STATIC_FALLBACK_PROMPTS: Record<string, string> = {
@@ -30,7 +32,20 @@ Return a structured JSON output indicating if duplicates exist, matching feature
   "discovery:spec": `You are the ShipFlow AI Feature Specification Builder.
 Compile the original request, repo context, and any clarification answers into a robust, professional Feature Specification.
 Detail user stories, acceptance criteria, technical requirements, out-of-scope items, and risk analysis.
-Return a structured JSON output conforming to the specification schema.`
+Return a structured JSON output conforming to the specification schema.`,
+
+  // PRD Generation Prompt
+  "prd:generate": `You are the ShipFlow AI PRD Intelligence Engine.
+Generate a production-quality, comprehensive Product Requirements Document (PRD) based on the provided Feature Specification, clarification answers, and conversation history.
+Include all required sections: executive summary, problem statement, goals, non-goals, user personas, user stories, functional requirements, non-functional requirements, acceptance criteria, edge cases, risks, dependencies, success metrics, out of scope, and future enhancements.
+Return ONLY a valid structured JSON object conforming to the PRD schema.`,
+
+  // Planning Generation Prompt
+  "planning:generate": planningGenerationPrompt,
+
+  // Repository analyze and search prompts
+  "repository:analyze": repositoryAnalysisPrompt,
+  "repository:search": repositorySearchPrompt
 };
 
 export async function loadPrompt(

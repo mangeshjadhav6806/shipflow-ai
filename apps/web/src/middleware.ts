@@ -12,6 +12,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/internal/workspace-test") ||
     pathname.startsWith("/internal/discovery-test") ||
+    pathname.startsWith("/internal/planning-test") ||
+    pathname.startsWith("/internal/github-test") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.includes("."); // matches files like /logo.png, etc.
 

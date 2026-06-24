@@ -4,6 +4,9 @@ import { workspaceRouter } from "./routers/workspace";
 import { memberRouter } from "./routers/member";
 import { projectRouter } from "./routers/project";
 import { discoveryRouter } from "./routers/discovery";
+import { prdRouter } from "./routers/prd";
+import { planningRouter } from "./routers/planning";
+import { githubRouter } from "./routers/github";
 
 export const appRouter = router({
   greeting: publicProcedure.query(() => {
@@ -14,7 +17,9 @@ export const appRouter = router({
   member: memberRouter,
   project: projectRouter,
   discovery: discoveryRouter,
+  prd: prdRouter,
+  planning: planningRouter,
+  github: githubRouter,
 });
 
 export type AppRouter = typeof appRouter;
-

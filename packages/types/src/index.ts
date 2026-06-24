@@ -38,6 +38,11 @@ export interface AuthContext {
 // Re-export workspace types
 export * from "./workspace";
 export * from "./discovery";
+export * from "./prd";
+export * from "./planning";
+export * from "./repository";
+
+
 
 
 
