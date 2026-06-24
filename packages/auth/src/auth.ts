@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth";
+import type { DBAdapter } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import { prisma } from "@shipflow/db";
+
 
 // =============================================================================
 // ShipFlow AI — BetterAuth Server Instance
@@ -25,11 +27,142 @@ if (!process.env.BETTER_AUTH_SECRET) {
   }
 }
 
+// Prisma Client Extension to dynamically strip out the 'emailVerified' field from any User operations,
+// since the existing Prisma schema does not define emailVerified. Also handles credentials
+// 'password' storage by mapping it to the unused 'accessToken' column on the Account table.
+const prismaWithAuth = prisma.$extends({
+  query: {
+    user: {
+      async create({ args, query }) {
+        if (args.data) {
+          const { emailVerified, ...rest } = args.data as any;
+          args.data = rest;
+        }
+        return query(args);
+      },
+      async update({ args, query }) {
+        if (args.data) {
+          const { emailVerified, ...rest } = args.data as any;
+          args.data = rest;
+        }
+        return query(args);
+      },
+      async updateMany({ args, query }) {
+        if (args.data) {
+          const { emailVerified, ...rest } = args.data as any;
+          args.data = rest;
+        }
+        return query(args);
+      },
+      async upsert({ args, query }) {
+        if (args.create) {
+          const { emailVerified, ...rest } = args.create as any;
+          args.create = rest;
+        }
+        if (args.update) {
+          const { emailVerified, ...rest } = args.update as any;
+          args.update = rest;
+        }
+        return query(args);
+      },
+    },
+    account: {
+      async create({ args, query }) {
+        if (args.data) {
+          const { password, ...rest } = args.data as any;
+          if (password !== undefined) {
+            rest.accessToken = password;
+          }
+          args.data = rest;
+        }
+        return query(args);
+      },
+      async update({ args, query }) {
+        if (args.data) {
+          const { password, ...rest } = args.data as any;
+          if (password !== undefined) {
+            rest.accessToken = password;
+          }
+          args.data = rest;
+        }
+        return query(args);
+      },
+      async updateMany({ args, query }) {
+        if (args.data) {
+          const { password, ...rest } = args.data as any;
+          if (password !== undefined) {
+            rest.accessToken = password;
+          }
+          args.data = rest;
+        }
+        return query(args);
+      },
+      async upsert({ args, query }) {
+        if (args.create) {
+          const { password, ...rest } = args.create as any;
+          if (password !== undefined) {
+            rest.accessToken = password;
+          }
+          args.create = rest;
+        }
+        if (args.update) {
+          const { password, ...rest } = args.update as any;
+          if (password !== undefined) {
+            rest.accessToken = password;
+          }
+          args.update = rest;
+        }
+        return query(args);
+      },
+      async findFirst({ args, query }) {
+        const result = await query(args);
+        if (result && (result as any).accessToken) {
+          (result as any).password = (result as any).accessToken;
+        }
+        return result;
+      },
+      async findUnique({ args, query }) {
+        const result = await query(args);
+        if (result && (result as any).accessToken) {
+          (result as any).password = (result as any).accessToken;
+        }
+        return result;
+      },
+      async findMany({ args, query }) {
+        const results = await query(args);
+        if (Array.isArray(results)) {
+          for (const result of results) {
+            if (result && (result as any).accessToken) {
+              (result as any).password = (result as any).accessToken;
+            }
+          }
+        }
+        return results;
+      },
+    },
+  },
+});
+
 export const auth = betterAuth({
   // ─── Database ──────────────────────────────────────────────────────────────
-  database: prismaAdapter(prisma, {
+  database: prismaAdapter(prismaWithAuth as any, {
     provider: "postgresql",
   }),
+
+  // ─── User Field Mapping ───────────────────────────────────────────────────
+  user: {
+    fields: {
+      image: "avatarUrl",
+    },
+  },
+
+  // ─── Account Field Mapping ────────────────────────────────────────────────
+  account: {
+    fields: {
+      providerId: "provider",
+      accountId: "providerId",
+    },
+  },
 
   // ─── Application URL ───────────────────────────────────────────────────────
   baseURL: appUrl,
@@ -85,6 +218,9 @@ export const auth = betterAuth({
 
   // ─── Advanced Security ─────────────────────────────────────────────────────
   advanced: {
+    database: {
+      generateId: "uuid",
+    },
     // Use __Secure- prefix in production for HTTPS-only cookies
     useSecureCookies: !isDevelopment,
     // Generate unique cookie names to prevent conflicts
