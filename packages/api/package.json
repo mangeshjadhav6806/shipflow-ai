@@ -20,6 +20,7 @@
     "@shipflow/types": "workspace:*",
     "@shipflow/logger": "workspace:*",
     "@shipflow/auth": "workspace:*",
+    "@shipflow/ai": "workspace:*",
     "@trpc/server": "^10.45.2",
     "zod": "^3.23.8"
   },

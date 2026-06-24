@@ -37,5 +37,7 @@ export interface AuthContext {
 
 // Re-export workspace types
 export * from "./workspace";
+export * from "./discovery";
+
 
 

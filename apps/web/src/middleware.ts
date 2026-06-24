@@ -10,6 +10,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/signup") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhooks") ||
+    pathname.startsWith("/internal/workspace-test") ||
+    pathname.startsWith("/internal/discovery-test") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.includes("."); // matches files like /logo.png, etc.
 

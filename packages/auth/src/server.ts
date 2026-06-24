@@ -38,6 +38,7 @@ export { RoleService, VALID_ROLES } from "./role-service";
 export { WorkspaceService } from "./workspace-service";
 export { MembershipService } from "./membership-service";
 export { InvitationService } from "./invitation-service";
+export { OrganizationService } from "./organization-service";
 
 // Re-export authorization utilities
 export { authorize } from "./authorization-middleware";

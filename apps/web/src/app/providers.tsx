@@ -29,6 +29,12 @@ export function Providers({ children }: { children: ReactNode }) {
       links: [
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
+          headers() {
+            return {
+              "x-workspace-id": typeof window !== "undefined" ? localStorage.getItem("sf-workspace-id") || "" : "",
+              "x-organization-id": typeof window !== "undefined" ? localStorage.getItem("sf-organization-id") || "" : "",
+            };
+          },
         }),
       ],
     })

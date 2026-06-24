@@ -14,10 +14,13 @@
     "test": "echo \"No tests in @shipflow/ai\""
   },
   "dependencies": {
-    "@shipflow/shared": "workspace:*",
+    "@ai-sdk/google": "^3.0.83",
+    "@ai-sdk/openai": "^3.0.74",
     "@shipflow/logger": "workspace:*",
+    "@shipflow/shared": "workspace:*",
     "@shipflow/types": "workspace:*",
-    "@shipflow/utils": "workspace:*"
+    "@shipflow/utils": "workspace:*",
+    "ai": "^6.0.208"
   },
   "devDependencies": {
     "@shipflow/eslint-config": "workspace:*",

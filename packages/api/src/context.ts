@@ -1,5 +1,5 @@
 import { getSessionFromHeaders } from "@shipflow/auth/server";
-import type { AuthContext, WorkspaceContext } from "@shipflow/types";
+import type { AuthContext, Workspace, Organization, Member, UserRole, WorkspaceContext } from "@shipflow/types";
 
 // =============================================================================
 // ShipFlow AI — tRPC Context Creator
@@ -15,6 +15,8 @@ export async function createContext(opts?: { req: Request }): Promise<Context> {
       session: null,
       user: null,
       workspaceContext: null,
+      orgContext: null,
+      headers: new Headers(),
     };
   }
 
@@ -24,7 +26,9 @@ export async function createContext(opts?: { req: Request }): Promise<Context> {
     return {
       session: sessionData?.session ?? null,
       user: sessionData?.user ?? null,
-      workspaceContext: null, // Set by workspace middleware
+      workspaceContext: null, // Resolved inside procedures/middleware
+      orgContext: null,       // Resolved inside procedures/middleware
+      headers: req.headers,
     };
   } catch (error) {
     console.error("[tRPC Context] Error fetching session:", error);
@@ -32,12 +36,18 @@ export async function createContext(opts?: { req: Request }): Promise<Context> {
       session: null,
       user: null,
       workspaceContext: null,
+      orgContext: null,
+      headers: req?.headers ?? new Headers(),
     };
   }
 }
 
 export interface Context extends AuthContext {
-  workspaceContext: WorkspaceContext | null;
+  workspaceContext: (WorkspaceContext & { permissions: string[] }) | null;
+  orgContext: {
+    organization: Organization;
+  } | null;
+  headers: Headers;
 }
 
 export type ContextType = Awaited<ReturnType<typeof createContext>>;

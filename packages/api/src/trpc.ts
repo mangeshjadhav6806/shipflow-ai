@@ -1,14 +1,12 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { Context } from "./context";
-import { MembershipService, PermissionService } from "@shipflow/auth/server";
+import { MembershipService, PermissionService, WorkspaceService } from "@shipflow/auth/server";
 import { WorkspaceNotFoundError, MemberNotFoundError } from "@shipflow/shared";
 import type { UserRole } from "@shipflow/types";
+import { prisma } from "@shipflow/db";
 
 // =============================================================================
-// ShipFlow AI — tRPC Initialization
-// =============================================================================
-// Enforces TypeScript types for tRPC context and provides standard wrappers
-// for both public (unauthenticated) and protected (authenticated) procedures.
+// ShipFlow AI — tRPC Initialization & Procedures
 // =============================================================================
 
 const t = initTRPC.context<Context>().create();
@@ -19,7 +17,6 @@ export const publicProcedure = t.procedure;
 /**
  * Protected procedure that requires authentication.
  * Throws UNAUTHORIZED error if user is not logged in.
- * Safe to use for any authenticated operations.
  */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session || !ctx.user) {
@@ -40,7 +37,6 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 /**
  * Middleware that ensures user is authenticated and provides typed context.
- * Can be composed with other middleware for additional checks.
  */
 export const withAuth = t.middleware(({ ctx, next }) => {
   if (!ctx.session || !ctx.user) {
@@ -60,68 +56,110 @@ export const withAuth = t.middleware(({ ctx, next }) => {
 });
 
 /**
- * Create a workspace-aware procedure.
- * Requires workspaceId in input and validates membership.
- * Usage: export const myProcedure = createWorkspaceProcedure();
+ * Workspace procedure that extracts workspace ID/slug from headers or input,
+ * resolves current Organization, Workspace, Membership, Role, and Permissions,
+ * and attaches them to context.
+ */
+export const workspaceProcedure = protectedProcedure.use(async ({ ctx, next, input }) => {
+  try {
+    const workspaceId =
+      (input as any)?.workspaceId ||
+      ctx.headers.get("x-workspace-id") ||
+      undefined;
+
+    const workspaceSlug =
+      (input as any)?.workspaceSlug ||
+      ctx.headers.get("x-workspace-slug") ||
+      undefined;
+
+    if (!workspaceId && !workspaceSlug) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "workspaceId or workspaceSlug is required in input or headers (x-workspace-id / x-workspace-slug)",
+      });
+    }
+
+    let workspace;
+    if (workspaceId) {
+      workspace = await WorkspaceService.getWorkspace(workspaceId);
+    } else {
+      workspace = await WorkspaceService.getWorkspaceBySlug(workspaceSlug!);
+    }
+
+    if (workspace.deletedAt) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Workspace not found",
+      });
+    }
+
+    // Resolve organization
+    const org = await prisma.organization.findUnique({
+      where: { id: workspace.organizationId },
+    });
+
+    if (!org || org.deletedAt) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Organization not found",
+      });
+    }
+
+    // Check membership and get role
+    const member = await MembershipService.getMember(workspace.id, ctx.user.id);
+    if (member.deletedAt) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You are not a member of this workspace",
+      });
+    }
+
+    const permissions = PermissionService.getPermissionsForRole(member.role);
+
+    return next({
+      ctx: {
+        ...ctx,
+        orgContext: {
+          organization: org as any,
+        },
+        workspaceContext: {
+          workspace: workspace as any,
+          member: member as any,
+          role: member.role,
+          permissions,
+        },
+      },
+    });
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    if (error instanceof WorkspaceNotFoundError) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Workspace not found",
+      });
+    }
+    if (error instanceof MemberNotFoundError) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You are not a member of this workspace",
+      });
+    }
+    throw error;
+  }
+});
+
+/**
+ * Backwards compatible function version of workspaceProcedure.
  */
 export function createWorkspaceProcedure() {
-  return protectedProcedure.use(async ({ ctx, next, input }) => {
-    try {
-      const workspaceId = (input as any)?.workspaceId;
-      if (!workspaceId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "workspaceId is required",
-        });
-      }
-
-      // Check membership and get role
-      const role = await MembershipService.getUserRole(workspaceId, ctx.user!.id);
-
-      if (!role) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not a member of this workspace",
-        });
-      }
-
-      const member = await MembershipService.getMember(workspaceId, ctx.user!.id);
-
-      return next({
-        ctx: {
-          ...ctx,
-          workspaceContext: {
-            workspace: { id: workspaceId } as any, // Lazy load full workspace
-            member,
-            role,
-          },
-        },
-      });
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      if (error instanceof WorkspaceNotFoundError) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Workspace not found",
-        });
-      }
-      if (error instanceof MemberNotFoundError) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not a member of this workspace",
-        });
-      }
-      throw error;
-    }
-  });
+  return workspaceProcedure;
 }
 
 /**
  * Create a procedure that requires a specific permission.
- * Usage: export const myProcedure = createPermissionProcedure("canDeleteWorkspace");
  */
 export function createPermissionProcedure(requiredPermission: string) {
-  return createWorkspaceProcedure().use(({ ctx, next }) => {
+  return workspaceProcedure.use(({ ctx, next }) => {
     if (!ctx.workspaceContext) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -147,10 +185,9 @@ export function createPermissionProcedure(requiredPermission: string) {
 
 /**
  * Create a procedure that requires a specific role.
- * Usage: export const myProcedure = createRoleProcedure("OWNER");
  */
 export function createRoleProcedure(requiredRole: UserRole) {
-  return createWorkspaceProcedure().use(({ ctx, next }) => {
+  return workspaceProcedure.use(({ ctx, next }) => {
     if (!ctx.workspaceContext) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
